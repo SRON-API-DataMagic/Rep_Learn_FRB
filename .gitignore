@@ -1,2 +1,5 @@
 # Ignore all filterbank files
 *.fil
+
+# Don't need no pycache in my repo
+*.pyc
