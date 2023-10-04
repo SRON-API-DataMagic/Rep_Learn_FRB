@@ -1,6 +1,4 @@
 import tempfile
-from urllib import request
-
 import matplotlib.pyplot as plt
 import numpy as np
 from jess.dispersion import dedisperse
@@ -64,15 +62,13 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     sigproc_object.append_spectra(noise, output_file)
 
 
-def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
+def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse):
     """
     Inject a pulse into a dynamic spectrum.
 
     Parameters:
     - dynamic_spectra (numpy.ndarray): The dynamic spectrum into which the pulse will be injected.
     - pulse (numpy.ndarray): The pulse to inject into the dynamic spectrum.
-    - pulse_start_time (int): The time sample where you want to inject the pulse. If None, it will be placed in the
-                              middle of the dynamic spectrum.
 
     Returns:
     - numpy.ndarray: The dynamic spectrum with the injected pulse.
@@ -81,19 +77,35 @@ def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=
     # Make a copy of the dynamic spectrum
     dynamic_spectra_copy = dynamic_spectra.copy()
 
-    # Define the time sample where you want to inject the pulse, for now middle of spectrum
-    if pulse_start_time is None:
-        pulse_start_time = dynamic_spectra_copy.shape[0] // 2  # Adjust this to control the injection time
+    # Calculate the time sample where you want to inject the pulse, in the middle of the spectrum
+    pulse_start_time = dynamic_spectra_copy.shape[0] // 2 - pulse.shape[0] // 2
 
-    # Ensure the dimensions of pulse match the target region
-    desired_shape = dynamic_spectra_copy[
-        pulse_start_time:pulse_start_time + dynamic_spectra_copy.shape[0], :].shape
+    # Ensure the dimensions of the pulse match the target region
+    desired_shape = dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :].shape
     pulse_resized = np.resize(pulse, desired_shape)
 
     # Inject the resized pulse into the copied dynamic spectrum
-    dynamic_spectra_copy[pulse_start_time:pulse_start_time + dynamic_spectra_copy.shape[0], :] += pulse_resized
+    dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :] += pulse_resized
 
     return dynamic_spectra_copy
+    
+def get_dynamic_spectra_from_filterbank(file_name, num_time_samples):
+    """
+    Retrieve dynamic spectra from a filterbank file.
+
+    Parameters:
+        file_name (str): The name of the filterbank file to read.
+        num_time_samples (int): The number of time samples to retrieve.
+
+    Returns:
+        tuple: A tuple containing the dynamic spectra data as a numpy.ndarray
+        and the Your object representing the filterbank data.
+    """
+    temp_dir = tempfile.TemporaryDirectory()
+    yr_obj = Your(file_name)
+    dynamic_spectra = yr_obj.get_data(0, num_time_samples)
+    return dynamic_spectra, yr_obj
+
 
 if __name__ == "__main__":
     # Inject the pulse into the dynamic spectrum
