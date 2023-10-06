@@ -3,3 +3,6 @@
 
 # Don't need no pycache in my repo
 *.pyc
+
+# Don't save generated bursts
+simulated*
