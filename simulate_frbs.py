@@ -62,13 +62,15 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     sigproc_object.append_spectra(noise, output_file)
 
 
-def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse):
+def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
     """
     Inject a pulse into a dynamic spectrum.
 
     Parameters:
     - dynamic_spectra (numpy.ndarray): The dynamic spectrum into which the pulse will be injected.
     - pulse (numpy.ndarray): The pulse to inject into the dynamic spectrum.
+    - pulse_start_time (int, optional): The time sample where you want to inject the pulse.
+      If None (default), it will be placed in the middle of the dynamic spectrum.
 
     Returns:
     - numpy.ndarray: The dynamic spectrum with the injected pulse.
@@ -77,8 +79,9 @@ def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse):
     # Make a copy of the dynamic spectrum
     dynamic_spectra_copy = dynamic_spectra.copy()
 
-    # Calculate the time sample where you want to inject the pulse, in the middle of the spectrum
-    pulse_start_time = dynamic_spectra_copy.shape[0] // 2 - pulse.shape[0] // 2
+    # Calculate the time sample where you want to inject the pulse
+    if pulse_start_time is None:
+        pulse_start_time = dynamic_spectra_copy.shape[0] // 2 - pulse.shape[0] // 2
 
     # Ensure the dimensions of the pulse match the target region
     desired_shape = dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :].shape
@@ -88,6 +91,7 @@ def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse):
     dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :] += pulse_resized
 
     return dynamic_spectra_copy
+
     
 def get_dynamic_spectra_from_filterbank(file_name, num_time_samples):
     """
@@ -106,9 +110,27 @@ def get_dynamic_spectra_from_filterbank(file_name, num_time_samples):
     dynamic_spectra = yr_obj.get_data(0, num_time_samples)
     return dynamic_spectra, yr_obj
 
+def get_scaling_factor(min_value, max_value, exponent):
+    """
+    Generate a random scaling factor from a power law-like distribution.
+
+    Parameters:
+    - min_value (float): The minimum value of the range.
+    - max_value (float): The maximum value of the range.
+    - exponent (float): The exponent for the power law distribution (use a negative exponent).
+
+    Returns:
+    - float: A random scaling factor sampled from the power law-like distribution.
+    """
+    # Ensure the exponent is negative
+    if exponent >= 0:
+        raise ValueError("Exponent must be negative for a power law distribution.")
+
+    # Generate a random number from a power law-like distribution
+    scaling_factor = ((max_value**(exponent+1) - min_value**(exponent+1)) * np.random.random(1) + min_value**(exponent+1))**(1/(exponent+1))
+    
+    return scaling_factor[0]  # Convert to scalar and return
+
 
 if __name__ == "__main__":
-    # Inject the pulse into the dynamic spectrum
-    dynamic_spectra = [0]
-    pulse = [0]
-    dynamic_spectra_with_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
+    pass
