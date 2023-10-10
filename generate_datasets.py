@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from simulate_frbs import *
+import csv
 
 def generate_simple_burst_dataset(
     save_dir,
@@ -38,6 +39,9 @@ def generate_simple_burst_dataset(
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
 
+    # Create a list to store parameters for each burst
+    burst_parameters_list = []
+
     for i in range(num_pulses):
         # Draw random values for signal width and temporal width from Gaussian distributions
         sigma_time = np.random.normal(time_sigma_mean, time_sigma_std)
@@ -69,12 +73,41 @@ def generate_simple_burst_dataset(
         # Inject the pulse into the dynamic spectra
         dynamic_spectra_w_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
 
+        # Create a dictionary to store the parameters
+        parameters = {
+            'sigma_time': sigma_time,
+            'sigma_freq': sigma_freq,
+            'tau': 0,
+            'exponent': exponent,
+            'scaling_factor': scaling_factor,
+            'num_time_samples': num_time_samples
+        }
+
+        # Append parameters for this burst to the list
+        burst_parameters_list.append(parameters)
+
         # Define a filename for the numpy array
         filename = os.path.join(
-            save_dir, f"frb_{i}_{sigma_time}_{sigma_freq}.npy")
+            save_dir, f"frb_{i}.npy")
 
         # Save the dynamic spectra as a numpy array
         np.save(filename, dynamic_spectra_w_pulse)
+
+    # Define a filename for the CSV file for the entire dataset
+    csv_filename = os.path.join(save_dir, f"{save_dir}.csv")
+
+    # Write all the parameters for the entire burst dataset to the CSV file
+    with open(csv_filename, 'w', newline='') as csvfile:
+        fieldnames = burst_parameters_list[0].keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # Write header row
+        writer.writeheader()
+
+        # Write parameter values for each burst
+        for parameters in burst_parameters_list:
+            writer.writerow(parameters)
+
 
 
 def generate_scattered_burst_dataset(
@@ -113,6 +146,9 @@ def generate_scattered_burst_dataset(
 
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
+
+    # Create a list to store parameters for each burst
+    burst_parameters_list = []
 
     for i in range(num_pulses):
         # Draw random values for signal width and temporal width from Gaussian distributions
@@ -154,9 +190,41 @@ def generate_scattered_burst_dataset(
         # Inject the pulse into the dynamic spectra
         dynamic_spectra_w_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
 
+        # Create a dictionary to store the parameters
+        parameters = {
+            'sigma_time': sigma_time,
+            'sigma_freq': sigma_freq,
+            'tau': np.float(tau),
+            'exponent': exponent,
+            'scaling_factor': scaling_factor,
+            'num_time_samples': num_time_samples
+        }
+
+        # Append parameters for this burst to the list
+        burst_parameters_list.append(parameters)
+
         # Define a filename for the numpy array
         filename = os.path.join(
-            save_dir, f"frb_{i}_{sigma_time}_{sigma_freq}_{tau}.npy")
+            save_dir, f"frb_{i}.npy")
 
         # Save the dynamic spectra as a numpy array
         np.save(filename, dynamic_spectra_w_pulse)
+
+    # Define a filename for the CSV file for the entire dataset
+    csv_filename = os.path.join(save_dir, f"{save_dir}.csv")
+
+    # Write all the parameters for the entire burst dataset to the CSV file
+    with open(csv_filename, 'w', newline='') as csvfile:
+        fieldnames = burst_parameters_list[0].keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # Write header row
+        writer.writeheader()
+
+        # Write parameter values for each burst
+        for parameters in burst_parameters_list:
+            writer.writerow(parameters)
+
+
+
+
