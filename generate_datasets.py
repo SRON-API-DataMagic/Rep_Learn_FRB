@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from simulate_frbs import *
+from draw_from_dist import *
 import csv
 
 def generate_simple_burst_dataset(
@@ -12,8 +13,10 @@ def generate_simple_burst_dataset(
     filterbank_file,
     time_sigma_mean,
     time_sigma_std,
-    freq_sigma_mean,
-    freq_sigma_std
+    freq_sigma_min,
+    freq_sigma_max,
+    center_freq_min,
+    center_freq_max
     ):
     """
     Generate a dataset of simulated simple gaussian bursts and save them as numpy arrays.
@@ -26,8 +29,10 @@ def generate_simple_burst_dataset(
         filterbank_file (str): The path to the filterbank file to extract parameters from.
         time_sigma_mean (float): The mean value for pulse width in time.
         time_sigma_std (float): The standard deviation for pulse width in time.
-        freq_sigma_mean (float): The mean value for frequency width.
-        freq_sigma_std (float): The standard deviation for frequency width.
+        freq_sigma_min (float): The minimum value for frequency width.
+        freq_sigma_max (float): The maximum value for frequency width.
+        center_freq_min (float): The minimum value for center frequency in MHz.
+        center_freq_max (float): The maximum value for center frequency in MHz.
 
     Returns:
         None
@@ -35,6 +40,9 @@ def generate_simple_burst_dataset(
 
     # Load filterbank file to get relevant parameters
     dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+    # Crop spectrum
+    dynamic_spectra = dynamic_spectra[:, 208:720]
+
 
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -42,56 +50,72 @@ def generate_simple_burst_dataset(
     # Create a list to store parameters for each burst
     burst_parameters_list = []
 
-    for i in range(num_pulses):
-        # Draw random values for signal width and temporal width from Gaussian distributions
-        sigma_time = np.random.normal(time_sigma_mean, time_sigma_std)
-        sigma_freq = np.random.normal(freq_sigma_mean, freq_sigma_std)
+    i = 0
+    while i < num_pulses:
+        try:
+            sigma_time = generate_sigma_time(time_sigma_mean, time_sigma_std)
+            sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
+            center_freq = generate_center_freq(center_freq_min, center_freq_max)
 
-        # Create the pulse object with the specified parameters
-        pulse_obj = create.SimpleGaussPulse(
-            sigma_time=sigma_time,
-            sigma_freq=sigma_freq,
-            center_freq=yr_obj.your_header.center_freq,
-            dm=0,
-            tau=0,
-            phi=np.pi / 3,
-            spectral_index_alpha=0,
-            chan_freqs=yr_obj.chan_freqs,
-            tsamp=yr_obj.your_header.tsamp,
-            nscint=0,
-            bandpass=None,
-        )
+            # Create the pulse object with the specified parameters
+            pulse_obj = create.SimpleGaussPulse(
+                dm=0,
+                sigma_time=sigma_time,
+                sigma_freq=sigma_freq,
+                center_freq=center_freq,
+                tau=0,
+                phi=np.pi / 3,
+                spectral_index_alpha=0,
+                chan_freqs=yr_obj.chan_freqs,
+                tsamp=yr_obj.your_header.tsamp,
+                nscint=0,
+                bandpass=None,
+            )
 
-        # Scale the SNR of the pulse according to a power-law distribution
-        scaling_factor = get_scaling_factor(min_value=0.0002, max_value=0.003, exponent=exponent)
+            # Scale the SNR of the pulse according to a power-law distribution
+            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
 
-        # Generate the pulse signal with the specified parameters
-        pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
+            # Generate the pulse signal with the specified parameters
+            pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
 
-        pulse = pulse * scaling_factor
+            # Crop pulse
+            pulse = pulse[:, 208:720]
 
-        # Inject the pulse into the dynamic spectra
-        dynamic_spectra_w_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
+            # Normalize before scaling for consistency
+            pulse = pulse / np.max(pulse)
 
-        # Create a dictionary to store the parameters
-        parameters = {
-            'sigma_time': sigma_time,
-            'sigma_freq': sigma_freq,
-            'tau': 0,
-            'exponent': exponent,
-            'scaling_factor': scaling_factor,
-            'num_time_samples': num_time_samples
-        }
+            # Scale the pulse
+            pulse = (pulse * scaling_factor).astype(np.float32)
 
-        # Append parameters for this burst to the list
-        burst_parameters_list.append(parameters)
+            # Inject the pulse into the dynamic spectra
+            dynamic_spectra_w_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
 
-        # Define a filename for the numpy array
-        filename = os.path.join(
-            save_dir, f"frb_{i}.npy")
+            # Create a dictionary to store the parameters
+            parameters = {
+                'sigma_time': sigma_time,
+                'sigma_freq': sigma_freq,
+                'center_freq': center_freq,
+                'tau': 0,
+                'exponent': exponent,
+                'scaling_factor': scaling_factor,
+                'num_time_samples': num_time_samples
+            }
 
-        # Save the dynamic spectra as a numpy array
-        np.save(filename, dynamic_spectra_w_pulse)
+            # Append parameters for this burst to the list
+            burst_parameters_list.append(parameters)
+
+            # Define a filename for the numpy array
+            filename = os.path.join(
+                save_dir, f"frb_{i}.npy")
+
+            # Save the dynamic spectra as a numpy array
+            np.save(filename, dynamic_spectra_w_pulse)
+
+            i += 1
+        
+        except ValueError:
+            # Handle the error or simply continue to the next iteration
+            continue
 
     # Define a filename for the CSV file for the entire dataset
     csv_filename = os.path.join(save_dir, f"{save_dir}.csv")

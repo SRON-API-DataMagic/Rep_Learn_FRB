@@ -1,6 +1,6 @@
 import numpy as np
 
-def generate_random_center_freq(min_freq, max_freq):
+def generate_center_freq(min_freq, max_freq):
     """
     Generate a random frequency center within the specified range.
 
@@ -14,9 +14,7 @@ def generate_random_center_freq(min_freq, max_freq):
     center_freq = np.random.uniform(min_freq, max_freq)
     return center_freq
 
-import numpy as np
-
-def generate_random_sigma_freq(min_sigma, max_sigma):
+def generate_sigma_freq(min_sigma, max_sigma):
     """
     Generate a random frequency width (sigma_freq) within the specified range.
 

@@ -36,9 +36,9 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
         rawdatafile=output_file,
         source_name="TEMP",
         nchans=num_frequency_channels,
-        foff=-0.234375,
-        fch1=1919.8828125,
-        tsamp=0.000256,
+        foff=-1,
+        fch1=2000,
+        tsamp=0.0000256,
         tstart=59319.97462321287,
         src_raj=112233.44,
         src_dej=112233.44,
@@ -134,3 +134,22 @@ def get_scaling_factor(min_value, max_value, exponent):
 
 if __name__ == "__main__":
     pass
+
+def normalize(spectra):
+    """
+    Normalize a spectra to have values between 0 and 1.
+
+    Parameters:
+        spectra (numpy.ndarray): The input spectra.
+
+    Returns:
+        numpy.ndarray: The normalized spectra.
+    """
+    min_value = np.min(spectra)
+    max_value = np.max(spectra)
+    range_value = max_value - min_value
+
+
+    normalized = (spectra - min_value) / range_value
+
+    return normalized
