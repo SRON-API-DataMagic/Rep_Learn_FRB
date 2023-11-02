@@ -132,8 +132,6 @@ def generate_simple_burst_dataset(
         for parameters in burst_parameters_list:
             writer.writerow(parameters)
 
-
-
 def generate_scattered_burst_dataset(
     save_dir,
     num_pulses,
@@ -142,12 +140,15 @@ def generate_scattered_burst_dataset(
     filterbank_file,
     time_sigma_mean,
     time_sigma_std,
-    freq_sigma_mean,
-    freq_sigma_std,
-    tau_mean
+    freq_sigma_min,
+    freq_sigma_max,
+    center_freq_min,
+    center_freq_max,
+    tau_mean,
+    tau_max
     ):
     """
-    Generate a dataset of simulated bursts and save them as numpy arrays.
+    Generate a dataset of simulated simple gaussian bursts and save them as numpy arrays.
 
     Parameters:
         save_dir (str): The directory to save the numpy arrays.
@@ -157,9 +158,12 @@ def generate_scattered_burst_dataset(
         filterbank_file (str): The path to the filterbank file to extract parameters from.
         time_sigma_mean (float): The mean value for pulse width in time.
         time_sigma_std (float): The standard deviation for pulse width in time.
-        freq_sigma_mean (float): The mean value for frequency width.
-        freq_sigma_std (float): The standard deviation for frequency width.
-        tau_mean (float): The mean scattering time
+        freq_sigma_min (float): The minimum value for frequency width.
+        freq_sigma_max (float): The maximum value for frequency width.
+        center_freq_min (float): The minimum value for center frequency in MHz.
+        center_freq_max (float): The maximum value for center frequency in MHz.
+        tau_mean (float): The mean scattering time in time bins
+        tau_max (float): The maximum scattering time in time bins
 
     Returns:
         None
@@ -167,6 +171,9 @@ def generate_scattered_burst_dataset(
 
     # Load filterbank file to get relevant parameters
     dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+    # Crop spectrum
+    dynamic_spectra = dynamic_spectra[:, 208:720]
+
 
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -174,65 +181,73 @@ def generate_scattered_burst_dataset(
     # Create a list to store parameters for each burst
     burst_parameters_list = []
 
-    for i in range(num_pulses):
-        # Draw random values for signal width and temporal width from Gaussian distributions
-        sigma_time = np.random.normal(time_sigma_mean, time_sigma_std)
-        sigma_freq = np.random.normal(freq_sigma_mean, freq_sigma_std)
+    i = 0
+    while i < num_pulses:
+        try:
+            sigma_time = generate_sigma_time(time_sigma_mean, time_sigma_std)
+            sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
+            center_freq = generate_center_freq(center_freq_min, center_freq_max)
+            scattering_time = generate_scattering_time(tau_mean, tau_max)
 
-        # Draw random value for scattering time from lognormal distribution
-        max_tau = 67  # The maximum allowed value for tau
-        while True:
-            # Draw random value for scattering time from lognormal distribution
-            tau = np.random.lognormal(tau_mean, 1, 1)
-            
-            if tau <= max_tau:
-                break
+            # Create the pulse object with the specified parameters
+            pulse_obj = create.SimpleGaussPulse(
+                dm=0,
+                sigma_time=sigma_time,
+                sigma_freq=sigma_freq,
+                center_freq=center_freq,
+                tau=scattering_time,
+                phi=np.pi / 3,
+                spectral_index_alpha=0,
+                chan_freqs=yr_obj.chan_freqs,
+                tsamp=yr_obj.your_header.tsamp,
+                nscint=0,
+                bandpass=None,
+            )
 
-        # Create the pulse object with the specified parameters
-        pulse_obj = create.SimpleGaussPulse(
-            sigma_time=sigma_time,
-            sigma_freq=sigma_freq,
-            center_freq=yr_obj.your_header.center_freq,
-            dm=0,
-            tau=tau,
-            phi=np.pi / 3,
-            spectral_index_alpha=0,
-            chan_freqs=yr_obj.chan_freqs,
-            tsamp=yr_obj.your_header.tsamp,
-            nscint=0,
-            bandpass=None,
-        )
+            # Scale the SNR of the pulse according to a power-law distribution
+            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
 
-        # Scale the SNR of the pulse according to a power-law distribution
-        scaling_factor = get_scaling_factor(min_value=0.0002, max_value=0.003, exponent=exponent)
+            # Generate the pulse signal with the specified parameters
+            pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
 
-        # Generate the pulse signal with the specified parameters
-        pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
+            # Crop pulse
+            pulse = pulse[:, 208:720]
 
-        pulse = pulse * scaling_factor
+            # Normalize before scaling for consistency
+            pulse = pulse / np.max(pulse)
 
-        # Inject the pulse into the dynamic spectra
-        dynamic_spectra_w_pulse = inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
+            # Scale the pulse
+            pulse = (pulse * scaling_factor).astype(np.float32)
 
-        # Create a dictionary to store the parameters
-        parameters = {
-            'sigma_time': sigma_time,
-            'sigma_freq': sigma_freq,
-            'tau': np.float(tau),
-            'exponent': exponent,
-            'scaling_factor': scaling_factor,
-            'num_time_samples': num_time_samples
-        }
+            # Inject the pulse into the dynamic spectra
+            dynamic_spectra_w_pulse = inject_scattered_pulse_into_dynamic_spectrum(dynamic_spectra, pulse)
 
-        # Append parameters for this burst to the list
-        burst_parameters_list.append(parameters)
+            # Create a dictionary to store the parameters
+            parameters = {
+                'sigma_time': sigma_time,
+                'sigma_freq': sigma_freq,
+                'center_freq': center_freq,
+                'tau': scattering_time * yr_obj.your_header.tsamp, # Scattering time in s by muliplying bins with tsamp
+                'exponent': exponent,
+                'scaling_factor': scaling_factor,
+                'num_time_samples': num_time_samples
+            }
 
-        # Define a filename for the numpy array
-        filename = os.path.join(
-            save_dir, f"frb_{i}.npy")
+            # Append parameters for this burst to the list
+            burst_parameters_list.append(parameters)
 
-        # Save the dynamic spectra as a numpy array
-        np.save(filename, dynamic_spectra_w_pulse)
+            # Define a filename for the numpy array
+            filename = os.path.join(
+                save_dir, f"frb_{i}.npy")
+
+            # Save the dynamic spectra as a numpy array
+            np.save(filename, dynamic_spectra_w_pulse)
+
+            i += 1
+        
+        except ValueError:
+            # Handle the error or simply continue to the next iteration
+            continue
 
     # Define a filename for the CSV file for the entire dataset
     csv_filename = os.path.join(save_dir, f"{save_dir}.csv")
@@ -248,7 +263,6 @@ def generate_scattered_burst_dataset(
         # Write parameter values for each burst
         for parameters in burst_parameters_list:
             writer.writerow(parameters)
-
 
 
 
