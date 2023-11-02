@@ -41,3 +41,20 @@ def generate_sigma_time(mean, std):
     """
     sigma_time = np.random.normal(loc=mean, scale=std)
     return sigma_time
+
+
+def generate_scattering_time(tau_mean, max_tau):
+    """
+    Draw a random scattering time from a lognormal distribution.
+
+    Parameters:
+        tau_mean (float): Mean of the lognormal distribution.
+        max_tau (float): Maximum allowed value for tau.
+
+    Returns:
+        float: Random scattering time within the specified range.
+    """
+    while True:
+        tau = np.random.lognormal(tau_mean, 1, 1)
+        if tau <= max_tau:
+            return np.float64(tau)

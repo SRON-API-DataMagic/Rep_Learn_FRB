@@ -92,6 +92,66 @@ def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=
 
     return dynamic_spectra_copy
 
+def inject_scattered_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
+    """
+    Inject a pulse into a dynamic spectrum.
+
+    Parameters:
+    - dynamic_spectra (numpy.ndarray): The dynamic spectrum into which the pulse will be injected.
+    - pulse (numpy.ndarray): The pulse to inject into the dynamic spectrum.
+    - pulse_start_time (int, optional): The time sample where you want to inject the pulse.
+      If None (default), it will be placed in the middle of the dynamic spectrum.
+
+    Returns:
+    - numpy.ndarray: The dynamic spectrum with the injected pulse.
+    """
+
+    # Make a copy of the dynamic spectrum
+    dynamic_spectra_copy = dynamic_spectra.copy()
+
+    # Calculate the time sample where you want to inject the pulse
+    if pulse_start_time is None:
+        pulse_start_time = dynamic_spectra_copy.shape[0] // 4
+
+    # Ensure the dimensions of the pulse match the target region
+    desired_shape = dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :].shape
+    pulse_resized = np.resize(pulse, desired_shape)
+
+    # Inject the resized pulse into the copied dynamic spectrum
+    dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :] += pulse_resized
+
+    return dynamic_spectra_copy
+
+def inject_complex_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
+    """
+    Inject a pulse into a dynamic spectrum.
+
+    Parameters:
+    - dynamic_spectra (numpy.ndarray): The dynamic spectrum into which the pulse will be injected.
+    - pulse (numpy.ndarray): The pulse to inject into the dynamic spectrum.
+    - pulse_start_time (int, optional): The time sample where you want to inject the pulse.
+      If None (default), it will be placed in the middle of the dynamic spectrum.
+
+    Returns:
+    - numpy.ndarray: The dynamic spectrum with the injected pulse.
+    """
+
+    # Make a copy of the dynamic spectrum
+    dynamic_spectra_copy = dynamic_spectra.copy()
+
+    # Calculate the time sample where you want to inject the pulse
+    if pulse_start_time is None:
+        pulse_start_time = dynamic_spectra_copy.shape[0] // 3
+
+    # Ensure the dimensions of the pulse match the target region
+    desired_shape = dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :].shape
+    pulse_resized = np.resize(pulse, desired_shape)
+
+    # Inject the resized pulse into the copied dynamic spectrum
+    dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :] += pulse_resized
+
+    return dynamic_spectra_copy
+
     
 def get_dynamic_spectra_from_filterbank(file_name, num_time_samples):
     """
