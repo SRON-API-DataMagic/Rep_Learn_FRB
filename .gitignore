@@ -6,3 +6,6 @@
 
 # Don't save generated bursts
 simulated*
+
+# Don't save figs
+*.gif
