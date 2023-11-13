@@ -182,9 +182,6 @@ def get_scaling_factor(min_value, max_value, exponent):
     Returns:
     - float: A random scaling factor sampled from the power law-like distribution.
     """
-    # Ensure the exponent is negative
-    if exponent >= 0:
-        raise ValueError("Exponent must be negative for a power law distribution.")
 
     # Generate a random number from a power law-like distribution
     scaling_factor = ((max_value**(exponent+1) - min_value**(exponent+1)) * np.random.random(1) + min_value**(exponent+1))**(1/(exponent+1))
