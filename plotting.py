@@ -17,13 +17,12 @@ def plot_dynamic_spectra(dynamic_spectra, title="Dynamic Spectra"):
     time_step = 0.0000256  # Default time step in seconds
 
     # Calculate the extent based on the number of frequency channels
-    extent = [0, num_time_samples * time_step * 1000, 1720, 1208]
+    extent = [0, num_time_samples * time_step * 1000, 1208, 1700]
 
     plt.figure(figsize=(10, 6))
     plt.imshow(dynamic_spectra.T, aspect="auto", cmap="viridis", extent=extent)
     plt.xlabel("Time (ms)", size=14)
     plt.ylabel("Frequency (MHz)", size=14)
-    plt.gca().invert_yaxis()
     plt.colorbar()
     plt.title(title, size=16)
     plt.show()
