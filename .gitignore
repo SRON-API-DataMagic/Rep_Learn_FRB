@@ -6,6 +6,14 @@
 
 # Don't save generated bursts
 simulated*
+Constant*
+drifting
+scattered
+complex
+simple*
 
-# Don't save figs
+
+
+# Don't save gifs
+Analysis/*.gif
 *.gif
