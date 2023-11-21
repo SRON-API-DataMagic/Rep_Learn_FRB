@@ -11,7 +11,6 @@ def generate_simple_burst_dataset(
     num_pulses,
     num_time_samples,
     exponent,
-    filterbank_file,
     time_sigma_mean,
     time_sigma_std,
     freq_sigma_min,
@@ -40,11 +39,6 @@ def generate_simple_burst_dataset(
         None
     """
 
-    # Load filterbank file to get relevant parameters
-    dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
-    # Crop spectrum
-    dynamic_spectra = dynamic_spectra[:, 208:720]
-
 
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -55,6 +49,13 @@ def generate_simple_burst_dataset(
     i = 0
     while i < num_pulses:
         try:
+            # Load filterbank file to get relevant parameters
+            create_filterbank_with_noise("output_with_noise.fil", std_value=np.sqrt(1.0/512), mean_value=0.0, num_frequency_channels=1000, num_time_samples=1024)
+            filterbank_file = "output_with_noise.fil"
+            dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+            # Crop spectrum
+            dynamic_spectra = dynamic_spectra[:, 208:720]
+
             sigma_time = generate_sigma_time(time_sigma_mean, time_sigma_std)
             sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
             center_freq = generate_center_freq(center_freq_min, center_freq_max)
@@ -75,7 +76,8 @@ def generate_simple_burst_dataset(
             )
 
             # Scale the SNR of the pulse according to a power-law distribution
-            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            # scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            scaling_factor = 1
 
             # Generate the pulse signal with the specified parameters
             pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
@@ -140,7 +142,6 @@ def generate_scattered_burst_dataset(
     num_pulses,
     num_time_samples,
     exponent,
-    filterbank_file,
     time_sigma_mean,
     time_sigma_std,
     freq_sigma_min,
@@ -159,7 +160,6 @@ def generate_scattered_burst_dataset(
         num_pulses (int): The number of bursts to generate.
         num_time_samples (int): The number of time samples in the filterbank file.
         exponent (float): The exponent for the power-law distribution used to scale SNR.
-        filterbank_file (str): The path to the filterbank file to extract parameters from.
         time_sigma_mean (float): The mean value for pulse width in time.
         time_sigma_std (float): The standard deviation for pulse width in time.
         freq_sigma_min (float): The minimum value for frequency width.
@@ -173,12 +173,6 @@ def generate_scattered_burst_dataset(
         None
     """
 
-    # Load filterbank file to get relevant parameters
-    dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
-    # Crop spectrum
-    dynamic_spectra = dynamic_spectra[:, 208:720]
-
-
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
 
@@ -188,6 +182,13 @@ def generate_scattered_burst_dataset(
     i = 0
     while i < num_pulses:
         try:
+            # Load filterbank file to get relevant parameters
+            create_filterbank_with_noise("output_with_noise.fil", std_value=np.sqrt(1.0/512), mean_value=0.0, num_frequency_channels=1000, num_time_samples=1024)
+            filterbank_file = "output_with_noise.fil"
+            dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+            # Crop spectrum
+            dynamic_spectra = dynamic_spectra[:, 208:720]
+
             sigma_time = generate_sigma_time(time_sigma_mean, time_sigma_std)
             sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
             center_freq = generate_center_freq(center_freq_min, center_freq_max)
@@ -209,7 +210,8 @@ def generate_scattered_burst_dataset(
             )
 
             # Scale the SNR of the pulse according to a power-law distribution
-            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            # scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            scaling_factor = 1
 
             # Generate the pulse signal with the specified parameters
             pulse = pulse_obj.sample_pulse(nsamp=int(3e5), dtype=np.float32)
@@ -276,7 +278,6 @@ def generate_complex_burst_dataset(
     num_pulses,
     num_time_samples,
     exponent,
-    filterbank_file,
     time_sigma_mean,
     time_sigma_std,
     freq_sigma_min,
@@ -293,7 +294,6 @@ def generate_complex_burst_dataset(
         num_pulses (int): The number of bursts to generate.
         num_time_samples (int): The number of time samples in the filterbank file.
         exponent (float): The exponent for the power-law distribution used to scale SNR.
-        filterbank_file (str): The path to the filterbank file to extract parameters from.
         time_sigma_mean (float): The mean value for pulse width in time.
         time_sigma_std (float): The standard deviation for pulse width in time.
         freq_sigma_min (float): The minimum value for frequency width.
@@ -307,12 +307,6 @@ def generate_complex_burst_dataset(
         None
     """
 
-    # Load filterbank file to get relevant parameters
-    dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
-    # Crop spectrum
-    dynamic_spectra = dynamic_spectra[:, 208:720]
-
-
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
 
@@ -322,6 +316,14 @@ def generate_complex_burst_dataset(
     i = 0
     while i < num_pulses:
         try:
+            # Load filterbank file to get relevant parameters
+            create_filterbank_with_noise("output_with_noise.fil", std_value=np.sqrt(1.0/512), mean_value=0.0, num_frequency_channels=1000, num_time_samples=1024)
+            filterbank_file = "output_with_noise.fil"
+            dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+            # Crop spectrum
+            dynamic_spectra = dynamic_spectra[:, 208:720]
+            print('checkpoint 1')
+            print(i)
             num_components = np.random.randint(2, 7)  # Random number of components (2 to 6)
 
             sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
@@ -338,7 +340,7 @@ def generate_complex_burst_dataset(
 
             # Generate offsets based on sigma times distribution
             for j in range(1, num_components):
-                offset = offsets[-1] + generate_sigma_time(0.0008, 0.0004)  # Offset follows previous component
+                offset = offsets[-1] + generate_sigma_time(0.001, 0.0004)  # Offset follows previous component
                 offsets.append(offset)
 
             # Create the pulse object with the specified parameters
@@ -361,8 +363,8 @@ def generate_complex_burst_dataset(
             )
 
             # Scale the SNR of the pulse according to a power-law distribution
-            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
-            print('checkpoint 1')
+            # scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            scaling_factor = 1
             # Generate the pulse signal with the specified parameters
             pulse = pulse_obj_complex.sample_pulse(nsamp=int(3e5), dtype=np.float32)
 
@@ -397,10 +399,10 @@ def generate_complex_burst_dataset(
             # Define a filename for the numpy array
             filename = os.path.join(
                 save_dir, f"{burst_name}_{i}.npy")
-
+            print('checkpoint 2')
             # Save the dynamic spectra as a numpy array
             np.save(filename, dynamic_spectra_w_pulse)
-            print('checkpoint 2')
+            print('checkpoint 3')
             i += 1
             print(i)
         
@@ -430,7 +432,6 @@ def generate_drifting_burst_dataset(
     num_pulses,
     num_time_samples,
     exponent,
-    filterbank_file,
     time_sigma_mean,
     time_sigma_std,
     freq_sigma_min,
@@ -447,7 +448,6 @@ def generate_drifting_burst_dataset(
         num_pulses (int): The number of bursts to generate.
         num_time_samples (int): The number of time samples in the filterbank file.
         exponent (float): The exponent for the power-law distribution used to scale SNR.
-        filterbank_file (str): The path to the filterbank file to extract parameters from.
         time_sigma_mean (float): The mean value for pulse width in time.
         time_sigma_std (float): The standard deviation for pulse width in time.
         freq_sigma_min (float): The minimum value for frequency width.
@@ -461,12 +461,6 @@ def generate_drifting_burst_dataset(
         None
     """
 
-    # Load filterbank file to get relevant parameters
-    dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
-    # Crop spectrum
-    dynamic_spectra = dynamic_spectra[:, 208:720]
-
-
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
 
@@ -476,10 +470,21 @@ def generate_drifting_burst_dataset(
     i = 0
     while i < num_pulses:
         try:
-            num_components = np.random.randint(2, 7)  # Random number of components (2 to 6)
+            # Load filterbank file to get relevant parameters
+            create_filterbank_with_noise("output_with_noise.fil", std_value=np.sqrt(1.0/512), mean_value=0.0, num_frequency_channels=1000, num_time_samples=1024)
+            filterbank_file = "output_with_noise.fil"
+            dynamic_spectra, yr_obj = get_dynamic_spectra_from_filterbank(filterbank_file, num_time_samples=num_time_samples)
+            # Crop spectrum
+            dynamic_spectra = dynamic_spectra[:, 208:720]
+
+            num_components = np.random.randint(4, 7)  # Random number of components (2 to 6)
 
             sigma_freq = generate_sigma_freq(freq_sigma_min, freq_sigma_max)
-            center_freq = generate_center_freq(center_freq_min, center_freq_max)
+            center_freq = 0
+            # Keep generating center_freq until it's above 1500
+            while center_freq <= 1500:
+                center_freq = generate_center_freq(1228, 1700)
+
 
             # Generate random parameters for each component
             relative_intensities = [1 for _ in range(num_components)]
@@ -492,7 +497,7 @@ def generate_drifting_burst_dataset(
 
             # Generate offsets based on sigma times distribution
             for j in range(1, num_components):
-                offset = offsets[-1] + generate_sigma_time(0.0008, 0.0004)  # Offset follows previous component
+                offset = offsets[-1] + generate_sigma_time(0.0003, 0.0001)  # Offset follows previous component
                 offsets.append(offset)
 
             drift_rate = 200 # MHz/s
@@ -506,7 +511,7 @@ def generate_drifting_burst_dataset(
 
             # Adjust the center frequencies for each component based on the drift
             for l in range(1, len(center_freqs)):
-                center_freqs[l] += drifts[l]  # Adjust center frequency based on drift
+                center_freqs[l] -= drifts[l]  # Adjust center frequency based on drift
 
             # Create the pulse object with the specified parameters
             dm_1 = 0
@@ -528,8 +533,8 @@ def generate_drifting_burst_dataset(
             )
 
             # Scale the SNR of the pulse according to a power-law distribution
-            scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
-            print('checkpoint 1')
+            # scaling_factor = get_scaling_factor(min_value=0.02, max_value=0.4, exponent=exponent)
+            scaling_factor = 1
             # Generate the pulse signal with the specified parameters
             pulse = pulse_obj_complex.sample_pulse(nsamp=int(3e5), dtype=np.float32)
 
@@ -567,9 +572,7 @@ def generate_drifting_burst_dataset(
 
             # Save the dynamic spectra as a numpy array
             np.save(filename, dynamic_spectra_w_pulse)
-            print('checkpoint 2')
             i += 1
-            print(i)
         
         except (ValueError, AssertionError) as e:
             print(f"there's an error here")
