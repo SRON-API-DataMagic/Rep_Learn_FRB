@@ -25,11 +25,8 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     None
     """
 
-    # Generate Gaussian noise with the desired standard deviation and mean
-    noise = np.random.normal(mean_value, std_value, size=(num_time_samples, num_frequency_channels))
-
-    # Make sure datatype is correct (float32)
-    noise = noise.astype(np.float32)
+    # Generate an array filled with zeros
+    zeros = np.zeros((num_time_samples, num_frequency_channels), dtype=np.float32)
 
     # Create a SIGPROC filterbank object with specified header parameters
     sigproc_object = make_sigproc_object(
@@ -59,7 +56,7 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     sigproc_object.write_header(output_file)
 
     # Append the data to the filterbank file
-    sigproc_object.append_spectra(noise, output_file)
+    sigproc_object.append_spectra(zeros, output_file)
 
 
 def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
