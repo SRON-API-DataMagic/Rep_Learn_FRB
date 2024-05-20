@@ -9,7 +9,7 @@ from your import Your
 from your.formats.filwriter import make_sigproc_object
 
 
-def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequency_channels=4096,
+def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequency_channels=4096, channel_start=2000,
                                  std_value=1, mean_value=0):
     """
     Create a filterbank file with synthetic Gaussian noise.
@@ -18,6 +18,7 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     - output_file (str): The output filterbank file name.
     - num_time_samples (int): Number of time samples in the filterbank data. Default is 8192.
     - num_frequency_channels (int): Number of frequency channels in the filterbank data. Default is 4096.
+    - channel_start (float): Frequncy of first channel (MHz)
     - std_value (float): The standard deviation of the generated Gaussian noise. Default is 1.
     - mean_value (float): The mean value of the generated Gaussian noise. Default is 0.
 
@@ -34,7 +35,7 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
         source_name="TEMP",
         nchans=num_frequency_channels,
         foff=-1,
-        fch1=2000,
+        fch1=channel_start,
         tsamp=0.0000256,
         tstart=59319.97462321287,
         src_raj=112233.44,
