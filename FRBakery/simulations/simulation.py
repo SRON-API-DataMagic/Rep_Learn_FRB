@@ -7,6 +7,7 @@ from scipy.stats import median_abs_deviation
 from will import create, inject, detect
 from your import Your
 from your.formats.filwriter import make_sigproc_object
+from scipy.signal import convolve
 
 
 def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequency_channels=4096, channel_start=2000,
@@ -18,16 +19,16 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     - output_file (str): The output filterbank file name.
     - num_time_samples (int): Number of time samples in the filterbank data. Default is 8192.
     - num_frequency_channels (int): Number of frequency channels in the filterbank data. Default is 4096.
-    - channel_start (float): Frequncy of first channel (MHz)
+    - channel_start (float): Frequency of first channel (MHz)
     - std_value (float): The standard deviation of the generated Gaussian noise. Default is 1.
     - mean_value (float): The mean value of the generated Gaussian noise. Default is 0.
 
     Returns:
     None
     """
-
-    # Generate an array filled with zeros
-    zeros = np.zeros((num_time_samples, num_frequency_channels), dtype=np.float32)
+    
+    # Generate synthetic Gaussian noise
+    noise_data = np.random.normal(loc=mean_value, scale=std_value, size=(num_time_samples, num_frequency_channels)).astype(np.float32)
 
     # Create a SIGPROC filterbank object with specified header parameters
     sigproc_object = make_sigproc_object(
@@ -36,7 +37,7 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
         nchans=num_frequency_channels,
         foff=-1,
         fch1=channel_start,
-        tsamp=0.0000256,
+        tsamp=81.92e-6,
         tstart=59319.97462321287,
         src_raj=112233.44,
         src_dej=112233.44,
@@ -56,8 +57,8 @@ def create_filterbank_with_noise(output_file, num_time_samples=8192, num_frequen
     # Write the header information to the filterbank file
     sigproc_object.write_header(output_file)
 
-    # Append the data to the filterbank file
-    sigproc_object.append_spectra(zeros, output_file)
+    # Append the noise data to the filterbank file
+    sigproc_object.append_spectra(noise_data, output_file)
 
 
 def inject_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_start_time=None):
@@ -109,7 +110,7 @@ def inject_scattered_pulse_into_dynamic_spectrum(dynamic_spectra, pulse, pulse_s
 
     # Calculate the time sample where you want to inject the pulse
     if pulse_start_time is None:
-        pulse_start_time = dynamic_spectra_copy.shape[0] // 4
+        pulse_start_time = dynamic_spectra_copy.shape[0] // 3
 
     # Ensure the dimensions of the pulse match the target region
     desired_shape = dynamic_spectra_copy[pulse_start_time:pulse_start_time + pulse.shape[0], :].shape
@@ -186,10 +187,6 @@ def get_scaling_factor(min_value, max_value, exponent):
     
     return scaling_factor[0]  # Convert to scalar and return
 
-
-if __name__ == "__main__":
-    pass
-
 def normalize(spectra):
     """
     Normalize a spectra to have values between 0 and 1.
@@ -208,3 +205,55 @@ def normalize(spectra):
     normalized = (spectra - min_value) / range_value
 
     return normalized
+
+def generate_scattering_time(frequency, tau_0, freq_0=1000):
+    """
+    Generate a scattering time that increases with decreasing frequency.
+    
+    Parameters:
+    - frequency: The frequency at which to calculate the scattering time.
+    - tau_0: The scattering time at the reference frequency freq_0.
+    - freq_0: The reference frequency (default is 600 MHz).
+    
+    Returns:
+    - tau: The scattering time at the given frequency.
+    """
+    return tau_0 * (frequency / freq_0) ** -4
+
+def apply_scattering(pulse, frequencies, tau_0, time_step):
+    """
+    Apply scattering to the pulse by convolving each frequency channel with an exponential decay.
+    
+    Parameters:
+    - pulse: The input pulse (time samples x frequency channels).
+    - frequencies: The array of frequencies corresponding to the frequency channels.
+    - tau_0: The scattering time at the reference frequency.
+    - time_step: The time step size in seconds.
+    
+    Returns:
+    - scattered_pulse: The pulse after applying scattering.
+    """
+    num_time_samples, num_frequency_channels = pulse.shape
+    scattered_pulse = np.zeros_like(pulse)
+    
+    for i in range(num_frequency_channels):
+        frequency = frequencies[i]
+        tau = generate_scattering_time(frequency, tau_0)
+        decay_function = np.exp(-np.arange(0, num_time_samples * time_step, time_step) / tau)
+        decay_function /= decay_function.sum()  # Normalize to maintain total energy
+        
+        # Convolve the pulse with the decay function
+        convolved = convolve(pulse[:, i], decay_function, mode='full')[:num_time_samples]
+        
+        # Ensure the convolved signal has the correct length
+        if len(convolved) > num_time_samples:
+            convolved = convolved[:num_time_samples]
+        elif len(convolved) < num_time_samples:
+            convolved = np.pad(convolved, (0, num_time_samples - len(convolved)), 'constant')
+        
+        scattered_pulse[:, i] = convolved
+    
+    return scattered_pulse
+
+if __name__ == "__main__":
+    pass
